@@ -1,27 +1,66 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { DashboardSidebar } from '@/components/layout/DashboardSidebar';
 import { Plus, Search, Upload, MoreHorizontal, Check, X } from 'lucide-react';
 
-const mockGuests = [
-    { id: 1, name: "Sarah Jenkins", email: "sarah.j@example.com", status: "Confirmed", phone: "+1 (555) 123-4567" },
-    { id: 2, name: "Michael Chen", email: "m.chen@example.com", status: "Pending Approval", phone: "+1 (555) 987-6543" }, // New status
-    { id: 3, name: "Jessica & Tom", email: "jess.tom@example.com", status: "Confirmed", phone: "+1 (555) 456-7890" },
-    { id: 4, name: "Grandma Rose", email: "rose.g@example.com", status: "Declined", phone: "+1 (555) 111-2222" },
-    { id: 5, name: "David Miller", email: "dave.m@example.com", status: "Pending Approval", phone: "+1 (555) 333-4444" },
-];
+type Guest = {
+  id: number;
+  name: string;
+  email: string;
+  status: string;
+  phone: string;
+};
 
 export default function GuestListPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filter, setFilter] = useState('All');
-    const [guests, setGuests] = useState(mockGuests);
+    const [guests, setGuests] = useState<Guest[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [approvingId, setApprovingId] = useState<number | null>(null);
+    const [fetchError, setFetchError] = useState<string | null>(null);
 
-    const handleApprove = (id: number) => {
-        setGuests(prev => prev.map(g => g.id === id ? { ...g, status: 'Confirmed' } : g));
+    const fetchGuests = async () => {
+        setFetchError(null);
+        try {
+            const res = await fetch('/api/guests');
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || `Failed to fetch (${res.status})`);
+            }
+            const data = await res.json();
+            setGuests(data);
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Failed to fetch guests';
+            setFetchError(msg + '. Ensure backend is running (npm run dev:backend) and database is set up.');
+            setGuests([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchGuests();
+    }, []);
+
+    const handleApprove = async (id: number) => {
+        setApprovingId(id);
+        try {
+            const res = await fetch(`/api/guests/${id}/approve`, { method: 'PATCH' });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'Failed to approve');
+            }
+            const updated = await res.json();
+            setGuests(prev => prev.map(g => g.id === id ? updated : g));
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setApprovingId(null);
+        }
     };
 
     const handleReject = (id: number) => {
@@ -82,6 +121,16 @@ export default function GuestListPage() {
                         </div>
                     </div>
 
+                    {loading ? (
+                        <div className="py-12 text-center text-[var(--text-secondary)]">Loading guests...</div>
+                    ) : fetchError ? (
+                        <div className="py-12 text-center space-y-4">
+                            <p className="text-[var(--status-error)]">{fetchError}</p>
+                            <Button variant="outline" onClick={() => { setLoading(true); fetchGuests(); }}>
+                                Retry
+                            </Button>
+                        </div>
+                    ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
@@ -111,7 +160,7 @@ export default function GuestListPage() {
                                         <td className="py-4 px-4 text-right">
                                             {guest.status === 'Pending Approval' ? (
                                                 <div className="flex justify-end gap-2">
-                                                    <Button size="sm" variant="ghost" onClick={() => handleApprove(guest.id)} className="text-[var(--status-success)] hover:bg-[var(--status-success)]/10">
+                                                    <Button size="sm" variant="ghost" onClick={() => handleApprove(guest.id)} disabled={approvingId === guest.id} isLoading={approvingId === guest.id} className="text-[var(--status-success)] hover:bg-[var(--status-success)]/10">
                                                         <Check size={16} />
                                                     </Button>
                                                     <Button size="sm" variant="ghost" onClick={() => handleReject(guest.id)} className="text-[var(--status-error)] hover:bg-[var(--status-error)]/10">
@@ -129,6 +178,7 @@ export default function GuestListPage() {
                             </tbody>
                         </table>
                     </div>
+                    )}
                 </Card>
             </main>
         </div>
