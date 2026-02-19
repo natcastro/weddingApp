@@ -13,7 +13,7 @@ const navItems = [
     { href: '/dashboard/invites', label: 'Invitations', icon: Mail },
     { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
-
+//component for the dashboard sidebar   
 export const DashboardSidebar = () => {
     const pathname = usePathname();
     const { logout } = useAuth();
