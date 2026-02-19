@@ -3,11 +3,14 @@
   "private": true,
   "workspaces": ["frontend", "backend"],
   "scripts": {
-    "dev": "concurrently -n \"backend,frontend\" -c \"blue,magenta\" \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:frontend": "npm run dev --workspace=frontend",
-    "dev:backend": "npm run dev --workspace=backend"
+    "dev": "dotenv -e .env -- concurrently -k \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "dotenv -e .env -- sh -c 'PORT=${FRONTEND_PORT:-3002} npm run dev --workspace=frontend'",
+    "dev:backend": "dotenv -e .env -- npm run dev --workspace=backend",
+    "kill-ports": "lsof -ti:3002,5002 | xargs kill -9 2>/dev/null || true",
+    "dev:fresh": "npm run kill-ports && npm run dev"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "dotenv-cli": "^7.4.2"
   }
 }

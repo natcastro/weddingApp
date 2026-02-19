@@ -1,11 +1,12 @@
 import type { NextConfig } from "next";
 
-const backendPort = process.env.BACKEND_PORT || process.env.PORT || "5000";
+// Proxy target (like DinoCamp's VITE_API_TARGET) - backend URL for /api/* rewrites
+const apiTarget = process.env.API_TARGET ?? "http://localhost:5002";
 
 const nextConfig: NextConfig = {
   async rewrites() {
     return [
-      { source: "/api/:path*", destination: `http://localhost:${backendPort}/api/:path*` },
+      { source: "/api/:path*", destination: `${apiTarget}/api/:path*` },
     ];
   },
 };
