@@ -28,7 +28,7 @@ This project is built using a modern, scalable technology stack:
 
 The system follows a standard client-server architecture with a PostgreSQL database.
 
-```mermaid
+
 graph LR
     User((User))
     Frontend[Frontend (Next.js)]
@@ -40,8 +40,6 @@ graph LR
     Backend -- SQL Query --> Database
     Database -- Result Set --> Backend
     Backend -- JSON Response --> Frontend
-```
-
 ---
 
 ## Prerequisites
